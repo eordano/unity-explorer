@@ -111,6 +111,52 @@ namespace Global.Tests.EditMode
             Assert.AreEqual($"https://worlds-content-server.decentraland.org/world/{world}", realmUrls.StartingRealmBlocking());
         }
 
+        [TestCase("genesis", InitialRealm.GenesisCity, "https://peer.decentraland.org")]
+        [TestCase("Genesis", InitialRealm.GenesisCity, "https://peer.decentraland.org")]
+        [TestCase("goerli", InitialRealm.Goerli, "https://sdk-team-cdn.decentraland.org/ipfs/goerli-plaza-main-latest")]
+        [TestCase("sdk", InitialRealm.SDK, "https://sdk-team-cdn.decentraland.org/ipfs/sdk7-test-scenes-main-latest")]
+        [TestCase("stream", InitialRealm.StreamingWorld, "https://sdk-team-cdn.decentraland.org/ipfs/streaming-world-main")]
+        [TestCase("test", InitialRealm.TestScenes, "https://sdk-test-scenes.decentraland.zone")]
+        public void ApplyNamedRealmAliasFromAppArgs(string alias, InitialRealm expectedInitial, string expectedUrl)
+        {
+            RealmLaunchSettings realmLaunchSettings = new RealmLaunchSettings();
+
+            ApplicationParametersParser applicationParametersParser = new (new[]
+            {
+                "--realm",
+                alias,
+            });
+
+            realmLaunchSettings.ApplyConfig(applicationParametersParser);
+
+            var dclUrlSource = DecentralandUrlsSource.CreateForTest(DecentralandEnvironment.Org, realmLaunchSettings);
+            var realmUrls = new RealmUrls(realmLaunchSettings, new RealmNamesMap(IWebRequestController.TEST), dclUrlSource);
+
+            Assert.AreEqual(expectedInitial, realmLaunchSettings.initialRealm);
+            Assert.AreEqual(expectedUrl, realmUrls.StartingRealmBlocking());
+        }
+
+        [Test]
+        public void ApplyGenesisDeeplinkWithPosition()
+        {
+            RealmLaunchSettings realmLaunchSettings = new RealmLaunchSettings();
+
+            ApplicationParametersParser applicationParametersParser = new (new[]
+            {
+                "decentraland://?realm=genesis&position=10,15",
+            });
+
+            realmLaunchSettings.ApplyConfig(applicationParametersParser);
+
+            var dclUrlSource = DecentralandUrlsSource.CreateForTest(DecentralandEnvironment.Org, realmLaunchSettings);
+            var realmUrls = new RealmUrls(realmLaunchSettings, new RealmNamesMap(IWebRequestController.TEST), dclUrlSource);
+
+            Assert.AreEqual(InitialRealm.GenesisCity, realmLaunchSettings.initialRealm);
+            Assert.AreEqual("https://peer.decentraland.org", realmUrls.StartingRealmBlocking());
+            Assert.AreEqual(10, realmLaunchSettings.targetScene.x);
+            Assert.AreEqual(15, realmLaunchSettings.targetScene.y);
+        }
+
         [Test]
         [TestCase("metadyne.dcl.eth")]
         [TestCase("dialogic.dcl.eth")]
