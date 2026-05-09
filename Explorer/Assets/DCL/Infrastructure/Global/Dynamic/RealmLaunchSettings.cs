@@ -19,6 +19,16 @@ namespace Global.Dynamic
     [Serializable]
     public class RealmLaunchSettings : ILaunchMode
     {
+        private static readonly Dictionary<string, (InitialRealm initial, string? customUrl)> NAMED_REALM_ALIASES = new (StringComparer.OrdinalIgnoreCase)
+        {
+            { "genesis",    (InitialRealm.GenesisCity,    null) },
+            { "goerli",     (InitialRealm.Goerli,         null) },
+            { "goerli-old", (InitialRealm.Custom,         IRealmNavigator.GOERLI_OLD_URL) },
+            { "stream",     (InitialRealm.StreamingWorld, null) },
+            { "sdk",        (InitialRealm.SDK,            null) },
+            { "test",       (InitialRealm.TestScenes,     null) },
+        };
+
         [Serializable]
         public struct PredefinedScenes
         {
@@ -116,10 +126,18 @@ namespace Global.Dynamic
                     remoteHybridSceneContentServer = HybridSceneContentServer.World;
                 }
             }
+            else if (NAMED_REALM_ALIASES.TryGetValue(realmParamValue, out (InitialRealm initial, string? customUrl) namedRealm))
+                SetNamedRealm(namedRealm.initial, namedRealm.customUrl);
             else if (IsRealmAWorld(realmParamValue))
                 SetWorldRealm(realmParamValue);
             else
                 SetCustomRealm(realmParamValue);
+        }
+
+        private void SetNamedRealm(InitialRealm initial, string? customUrl)
+        {
+            initialRealm = initial;
+            if (customUrl != null) customRealm = customUrl;
         }
 
         private void SetCustomRealm(string realm)
